@@ -1,0 +1,4 @@
+Pillow
+pygame
+vgamepad
+# nicegui removed per user request; UI uses tkinter/ttk
