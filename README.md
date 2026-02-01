@@ -1,13 +1,14 @@
 # CooPad — Remote Gamepad over Network
 
-**Cross-platform remote gamepad application for gaming over network**
+
 <img width="1280" height="832" alt="unwatermarked_Gemini_Generated_Image_p3ggtup3ggtup3gg" src="https://github.com/user-attachments/assets/2111fd40-c0b2-4d52-acec-e788db6b5c83" />
 
 
-CooPad allows you to use a physical gamepad connected to one computer (Client) to control games on another computer (Host) over a local network or VPN. Perfect for couch gaming, game streaming, or playing with friends remotely.
 
 <img width="1093" height="725" alt="image" src="https://github.com/user-attachments/assets/aada6173-6870-421e-941d-cd35b2af34f9" />
 
+**Cross-platform remote gamepad application for gaming over network**
+CooPad allows you to use a physical gamepad connected to one computer (Client) to control games on another computer (Host) over a local network or VPN. Perfect for couch gaming, game streaming, or playing with friends remotely.
 
 ## 🎮 Features
 
