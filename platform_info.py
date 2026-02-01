@@ -125,9 +125,9 @@ class PlatformInfo:
                     'status': 'warning',
                     'icon': '⚠',
                     'color': '#f59e0b',
-                    'message': 'evdev library is being installed automatically',
-                    'details': 'The application will set up required dependencies',
-                    'action': 'Host mode will be available after installation completes'
+                    'message': 'evdev library not found',
+                    'details': 'The application attempted to install it automatically',
+                    'action': 'For Host mode: pip install evdev OR install .deb package'
                 }
         else:
             return {

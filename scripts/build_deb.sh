@@ -84,15 +84,16 @@ if ! lsmod | grep -q uinput; then
     modprobe uinput || true
 fi
 
-# Install python3-evdev if available via apt (silent, best effort)
+# Install python3-evdev if available via apt
+# This runs as root during package installation
 if command -v apt-get >/dev/null 2>&1; then
     apt-get update -qq >/dev/null 2>&1 || true
     apt-get install -y -qq python3-evdev >/dev/null 2>&1 || true
 fi
 
-# Try to install evdev via pip as fallback (user install, silent)
+# Try to install evdev system-wide via pip as fallback (without --user since we're root)
 if command -v pip3 >/dev/null 2>&1; then
-    pip3 install --user -q evdev >/dev/null 2>&1 || true
+    pip3 install -q evdev >/dev/null 2>&1 || true
 fi
 
 echo "CooPad installed successfully!"
