@@ -7,12 +7,13 @@ CooPad allows you to use a physical gamepad connected to one computer (Client) t
 ## 🎮 Features
 
 - **Cross-Platform Support**: Works on Windows and Linux (all combinations supported)
-- **Controller Profiles**: Built-in support for PS4, PS5, Xbox 360, and generic controllers
+- **Controller Profiles**: Built-in support for PS4, PS5, Xbox 360, Nintendo Switch (Joy-Con and Pro Controller), and generic controllers
 - **Low Latency**: 1-10ms on local networks, optimized for real-time gaming
 - **Configurable Update Rates**: Choose between 30Hz, 60Hz, or 90Hz for optimal performance
 - **Real-Time Telemetry**: Monitor latency, jitter, and packet rates
 - **Smart Platform Detection**: Automatically detects your OS and available drivers
 - **User-Friendly Interface**: Clean GUI with helpful status indicators and setup guides
+- **Advanced Security**: Comprehensive DoS protection with rate limiting, IP filtering, and automatic threat response
 - **Secure**: Built-in packet validation and rate limiting protection
 
 ## 🚀 Quick Start
@@ -84,6 +85,8 @@ python3 main.py
      - PS4 Controller
      - PS5 Controller
      - Xbox 360 Controller
+     - Nintendo Switch Joy-Con
+     - Nintendo Switch Pro Controller
      - Generic (for other controllers)
    - Choose update rate based on your network:
      - 30 Hz: Lower bandwidth, suitable for slower networks
@@ -170,10 +173,33 @@ Both Host and Client tabs show real-time telemetry:
 
 ## 🔒 Security Features
 
-- **Packet Validation**: All packets are validated for size and content
-- **Rate Limiting**: Protection against DoS attacks (150 packets/sec max)
-- **Input Sanitization**: Gamepad values are clamped to valid ranges
-- **Version Checking**: Ensures protocol compatibility
+CooPad includes comprehensive security features to protect against various attacks, especially DoS (Denial of Service):
+
+### Multi-Layer Protection
+- **Token Bucket Rate Limiting**: Advanced burst protection (120 packets/sec per client, 20 burst capacity)
+- **IP-Based Rate Limiting**: Limits total packets per IP address (200 packets/sec)
+- **Connection Limits**: Maximum 3 simultaneous clients per IP address
+- **Automatic Blocking**: Auto-blocks clients after 5 security violations
+
+### Attack Prevention
+- **Timestamp Validation**: Prevents replay attacks (5-second max packet age)
+- **Packet Validation**: Size and content validation for all packets
+- **Duplicate Detection**: Sequence number tracking prevents packet replay
+- **Input Sanitization**: Gamepad values clamped to valid ranges
+
+### Monitoring & Response
+- **Security Event Logging**: Tracks all security-related events
+- **Manual IP Blocking**: Administrators can block/unblock IPs
+- **IP Whitelist Support**: Optional whitelist for trusted sources
+- **Real-time Statistics**: Monitor active clients, blocked IPs, and violations
+
+For detailed security documentation, see [SECURITY.md](SECURITY.md)
+
+### Security Best Practices
+1. **Use VPN** for remote connections (ZeroTier, Tailscale, WireGuard)
+2. **Enable Firewall** and only open UDP port 7777
+3. **Monitor Logs** regularly for suspicious activity
+4. **Keep Updated** to get latest security patches
 
 ## 🛠️ Building from Source
 

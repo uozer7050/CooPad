@@ -4,6 +4,7 @@ import time
 from typing import Optional
 
 from .protocol import unpack, PROTOCOL_VERSION
+from .security import SecurityManager, SecurityConfig
 
 try:
     import vgamepad as vg
@@ -127,7 +128,7 @@ class _UInputGamepad:
 
 
 class GamepadHost:
-    def __init__(self, bind_ip: str = "", port: int = 7777, status_cb=None, telemetry_cb=None):
+    def __init__(self, bind_ip: str = "", port: int = 7777, status_cb=None, telemetry_cb=None, security_config: Optional[SecurityConfig] = None):
         self.bind_ip = bind_ip
         self.port = port
         self._sock: Optional[socket.socket] = None
@@ -143,7 +144,11 @@ class GamepadHost:
         self._packet_count = 0
         self._latency_samples = []
         self._last_telemetry_time = 0
-        # Rate limiting: track packets per client
+        
+        # Initialize security manager
+        self._security = SecurityManager(security_config)
+        
+        # Legacy rate limiting (kept for backward compatibility, but security manager is preferred)
         self._rate_limit_window = 1.0  # seconds
         self._rate_limit_max = 150  # max packets per second per client
         self._client_packet_counts = {}  # client_id -> (timestamp, count)
@@ -210,8 +215,12 @@ class GamepadHost:
                 self.status_cb(f'bad version {state.version} from {addr}')
                 continue
             
-            # Rate limiting check
-            if not self._check_rate_limit(state.client_id, addr):
+            # Enhanced security check using security manager
+            allowed, reason = self._security.check_packet(state.client_id, addr[0], state.timestamp)
+            if not allowed:
+                # Only log first rejection to avoid spam
+                if reason != "IP rate limit exceeded" or self._packet_count % 100 == 0:
+                    self.status_cb(f'packet rejected from {addr}: {reason}')
                 continue
 
             # ownership
@@ -379,8 +388,31 @@ class GamepadHost:
                 self.telemetry_cb(f'Latency: {latency_ms:.1f}ms | Jitter: {jitter_ms:.1f}ms | seq={state.sequence}')
             self._last_telemetry_time = current_time
     
+    def get_security_stats(self) -> dict:
+        """Get security statistics from the security manager."""
+        return self._security.get_stats()
+    
+    def get_security_events(self, limit: int = 100) -> list:
+        """Get recent security events."""
+        return self._security.get_recent_events(limit)
+    
+    def block_ip(self, ip_address: str, duration: float = None):
+        """Manually block an IP address."""
+        self._security.block_ip(ip_address, duration)
+        self.status_cb(f'IP {ip_address} blocked')
+    
+    def unblock_ip(self, ip_address: str):
+        """Manually unblock an IP address."""
+        self._security.unblock_ip(ip_address)
+        self.status_cb(f'IP {ip_address} unblocked')
+    
     def _check_rate_limit(self, client_id: int, addr) -> bool:
-        """Check if client is within rate limits. Returns True if allowed, False if blocked."""
+        """
+        Legacy rate limiting check (kept for backward compatibility).
+        
+        NOTE: The SecurityManager provides more comprehensive rate limiting.
+        This method is kept for compatibility but should not be used directly.
+        """
         current_time = time.time()
         
         # Clean up old entries

@@ -369,7 +369,7 @@ Features:
 • Cross-platform support (Windows ↔ Linux)
 • Low latency gameplay
 • Configurable update rates
-• Controller profile selection (PS4, PS5, Xbox 360)
+• Controller profile selection (PS4, PS5, Xbox 360, Nintendo Switch)
 • Real-time network statistics
 • Automatic platform detection
 

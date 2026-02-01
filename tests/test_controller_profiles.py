@@ -23,9 +23,9 @@ from gp.core.client import GamepadClient
 def test_profile_imports():
     """Test that all profiles can be imported."""
     print("Testing profile imports...")
-    assert len(CONTROLLER_PROFILES) == 4, "Should have 4 profiles"
+    assert len(CONTROLLER_PROFILES) == 6, "Should have 6 profiles"
     
-    for key in ['generic', 'ps4', 'ps5', 'xbox360']:
+    for key in ['generic', 'ps4', 'ps5', 'xbox360', 'switch_joycon', 'switch_pro']:
         assert key in CONTROLLER_PROFILES, f"Missing profile: {key}"
         profile = CONTROLLER_PROFILES[key]
         assert profile.name is not None
@@ -88,13 +88,35 @@ def test_specific_profiles():
     assert xbox.uses_hat_for_dpad()
     assert hasattr(xbox, 'get_trigger_from_axis')
     print("✓ Xbox 360 profile has combined triggers")
+    
+    # Nintendo Switch Joy-Con: Should have single stick mapped to both left and right
+    joycon = get_profile('switch_joycon')
+    joycon_axes = joycon.get_axes_mapping()
+    assert joycon_axes['left_x'] == 0
+    assert joycon_axes['left_y'] == 1
+    assert joycon_axes['left_trigger'] is None
+    assert joycon_axes['right_trigger'] is None
+    assert not joycon.uses_hat_for_dpad()
+    print("✓ Nintendo Switch Joy-Con profile has correct configuration")
+    
+    # Nintendo Switch Pro Controller: Should have full dual-stick and separate triggers
+    switch_pro = get_profile('switch_pro')
+    switch_pro_axes = switch_pro.get_axes_mapping()
+    assert switch_pro_axes['left_x'] == 0
+    assert switch_pro_axes['left_y'] == 1
+    assert switch_pro_axes['right_x'] == 2
+    assert switch_pro_axes['right_y'] == 3
+    assert switch_pro_axes['left_trigger'] == 4
+    assert switch_pro_axes['right_trigger'] == 5
+    assert not switch_pro.uses_hat_for_dpad()
+    print("✓ Nintendo Switch Pro Controller profile has correct configuration")
 
 
 def test_client_integration():
     """Test that clients can use profiles."""
     print("\nTesting client integration...")
     
-    for profile_key in ['generic', 'ps4', 'ps5', 'xbox360']:
+    for profile_key in ['generic', 'ps4', 'ps5', 'xbox360', 'switch_joycon', 'switch_pro']:
         try:
             client = GamepadClient(
                 target_ip='127.0.0.1',
@@ -114,7 +136,7 @@ def test_display_name_conversion():
     print("\nTesting display name conversion...")
     
     profile_names = get_profile_names()
-    assert len(profile_names) == 4
+    assert len(profile_names) == 6
     
     for display_name in profile_names:
         key = get_profile_by_display_name(display_name)

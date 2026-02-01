@@ -292,12 +292,179 @@ class Xbox360ControllerProfile(ControllerProfile):
         return lt, rt
 
 
+class NintendoSwitchJoyConProfile(ControllerProfile):
+    """
+    Nintendo Switch Joy-Con (Left or Right) profile (pygame 2.x).
+    
+    Note: Each Joy-Con has only ONE analog stick. This profile maps the single
+    stick to both left and right stick inputs in the protocol, so the stick
+    will control whichever stick the game expects. When using a single Joy-Con,
+    games expecting dual-stick input will only receive input from one stick.
+    
+    For full dual-stick support, use the Nintendo Switch Pro Controller profile
+    or pair both Joy-Cons (though pygame may recognize them as separate devices).
+    """
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "Nintendo Switch Joy-Con"
+        self.description = "Nintendo Switch Joy-Con Left/Right (4 axes, 11 buttons, 0 hats)"
+    
+    def get_axes_mapping(self):
+        """
+        Nintendo Switch Joy-Con axes:
+            Both Left and Right Joy-Cons have:
+            X Axis: Left -> Right
+            Y Axis: Down -> Up (inverted from typical)
+            
+            Note: The Joy-Cons have 4 axes but only 2 are used for the stick.
+            Since each Joy-Con has only one physical stick, we map it to both
+            left and right stick positions in the protocol.
+        """
+        return {
+            'left_x': 0,    # Single stick X axis
+            'left_y': 1,    # Single stick Y axis (inverted)
+            'right_x': 0,   # No right stick, use left stick
+            'right_y': 1,   # No right stick, use left stick
+            'left_trigger': None,  # No analog triggers
+            'right_trigger': None,  # No analog triggers
+        }
+    
+    def get_button_mapping(self):
+        """
+        Nintendo Switch Joy-Con button mapping (combined Left + Right):
+        
+        Left Joy-Con:
+            Button 0: D-pad Up
+            Button 1: D-pad Down
+            Button 2: D-pad Left
+            Button 3: D-pad Right
+            Button 4: SL (mapped as Left Shoulder)
+            Button 5: SR (mapped as Right Shoulder)
+            Button 8: - (Minus)
+            Button 10: Stick In
+            Button 13: Capture
+            Button 14: L
+            Button 15: ZL
+            
+        Right Joy-Con:
+            Button 0: A
+            Button 1: B
+            Button 2: X
+            Button 3: Y
+            Button 4: SL (mapped as Left Shoulder)
+            Button 5: SR (mapped as Right Shoulder)
+            Button 9: + (Plus)
+            Button 11: Stick In
+            Button 12: Home
+            Button 14: R
+            Button 15: ZR
+            
+        Note: Buttons 4/5 (SL/SR) and 14/15 (L/R, ZL/ZR) serve different purposes
+        depending on Joy-Con orientation. When used standalone, SL/SR act as
+        shoulders. When paired, L/R/ZL/ZR are the primary shoulder buttons.
+        This mapping prioritizes the paired configuration.
+        """
+        return {
+            # Right Joy-Con face buttons (when right is primary)
+            0: 0x1000,    # A (or D-pad Up on Left Joy-Con)
+            1: 0x2000,    # B (or D-pad Down on Left Joy-Con)
+            2: 0x4000,    # X (or D-pad Left on Left Joy-Con)
+            3: 0x8000,    # Y (or D-pad Right on Left Joy-Con)
+            
+            # SL/SR buttons (when Joy-Con used standalone)
+            4: 0x0100,    # SL → Left Shoulder
+            5: 0x0200,    # SR → Right Shoulder
+            
+            # System buttons
+            8: 0x0020,    # - (Left Joy-Con) → Back/Select
+            9: 0x0010,    # + (Right Joy-Con) → Start
+            
+            # Stick buttons
+            10: 0x0040,   # Stick In (Left Joy-Con) → Left Thumb
+            11: 0x0080,   # Stick In (Right Joy-Con) → Right Thumb
+            
+            # L/R and ZL/ZR buttons (when Joy-Cons paired)
+            # Note: These overlap with buttons 4/5 in the protocol.
+            # Games will receive shoulder button input from either SL/SR or L/R/ZL/ZR
+            14: 0x0100,   # L/R → Left Shoulder (same as button 4)
+            15: 0x0200,   # ZL/ZR → Right Shoulder (same as button 5)
+        }
+
+
+class NintendoSwitchProControllerProfile(ControllerProfile):
+    """Nintendo Switch Pro Controller profile (pygame 2.x)."""
+    
+    def __init__(self):
+        super().__init__()
+        self.name = "Nintendo Switch Pro Controller"
+        self.description = "Nintendo Switch Pro Controller (6 axes, 16 buttons, 0 hats)"
+    
+    def get_axes_mapping(self):
+        """
+        Nintendo Switch Pro Controller axes:
+            Axis 0: Left Stick X (Left -> Right)
+            Axis 1: Left Stick Y (Up -> Down)
+            Axis 2: Right Stick X (Left -> Right)
+            Axis 3: Right Stick Y (Up -> Down)
+            Axis 4: Left Trigger (Out -> In)
+            Axis 5: Right Trigger (Out -> In)
+        """
+        return {
+            'left_x': 0,
+            'left_y': 1,
+            'right_x': 2,
+            'right_y': 3,
+            'left_trigger': 4,
+            'right_trigger': 5,
+        }
+    
+    def get_button_mapping(self):
+        """
+        Nintendo Switch Pro Controller buttons:
+            Button 0: A
+            Button 1: B
+            Button 2: X
+            Button 3: Y
+            Button 4: - (Minus)
+            Button 5: Home
+            Button 6: + (Plus)
+            Button 7: Left Stick In
+            Button 8: Right Stick In
+            Button 9: Left Bumper
+            Button 10: Right Bumper
+            Button 11: D-pad Up
+            Button 12: D-pad Down
+            Button 13: D-pad Left
+            Button 14: D-pad Right
+            Button 15: Capture
+        """
+        return {
+            0: 0x1000,    # A
+            1: 0x2000,    # B
+            2: 0x4000,    # X
+            3: 0x8000,    # Y
+            4: 0x0020,    # - (Minus) → Back/Select
+            6: 0x0010,    # + (Plus) → Start
+            7: 0x0040,    # Left Stick In → Left Thumb
+            8: 0x0080,    # Right Stick In → Right Thumb
+            9: 0x0100,    # Left Bumper → Left Shoulder
+            10: 0x0200,   # Right Bumper → Right Shoulder
+            11: 0x0001,   # D-pad Up
+            12: 0x0002,   # D-pad Down
+            13: 0x0004,   # D-pad Left
+            14: 0x0008,   # D-pad Right
+        }
+
+
 # Dictionary of all available profiles
 CONTROLLER_PROFILES = {
     'generic': ControllerProfile(),
     'ps4': PS4ControllerProfile(),
     'ps5': PS5ControllerProfile(),
     'xbox360': Xbox360ControllerProfile(),
+    'switch_joycon': NintendoSwitchJoyConProfile(),
+    'switch_pro': NintendoSwitchProControllerProfile(),
 }
 
 
@@ -306,7 +473,7 @@ def get_profile(profile_name):
     Get a controller profile by name.
     
     Args:
-        profile_name: Profile name key ('generic', 'ps4', 'ps5', 'xbox360')
+        profile_name: Profile name key ('generic', 'ps4', 'ps5', 'xbox360', 'switch_joycon', 'switch_pro')
     
     Returns:
         ControllerProfile: The requested profile, or generic if not found
