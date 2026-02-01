@@ -114,15 +114,18 @@ class GamepadClient:
                     rt = 0
                     if axes_map['left_trigger'] is not None and js.get_numaxes() > axes_map['left_trigger']:
                         # Trigger on separate axis (PS4/PS5 style)
-                        # Convert from -1.0..1.0 or 0.0..1.0 to 0..255
+                        # pygame typically returns -1.0 (not pressed) to 1.0 (fully pressed)
+                        # Convert to 0 (not pressed) to 255 (fully pressed)
                         lt_raw = js.get_axis(axes_map['left_trigger'])
-                        lt = int((lt_raw + 1.0) * 127.5) if lt_raw < 0 else int(lt_raw * 255)
+                        lt = int((lt_raw + 1.0) * 127.5)
                         lt = max(0, min(255, lt))
                     
                     if axes_map['right_trigger'] is not None and js.get_numaxes() > axes_map['right_trigger']:
                         # Trigger on separate axis (PS4/PS5 style)
+                        # pygame typically returns -1.0 (not pressed) to 1.0 (fully pressed)
+                        # Convert to 0 (not pressed) to 255 (fully pressed)
                         rt_raw = js.get_axis(axes_map['right_trigger'])
-                        rt = int((rt_raw + 1.0) * 127.5) if rt_raw < 0 else int(rt_raw * 255)
+                        rt = int((rt_raw + 1.0) * 127.5)
                         rt = max(0, min(255, rt))
                     
                     # Special case for Xbox 360: combined trigger axis

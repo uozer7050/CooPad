@@ -382,8 +382,6 @@ For setup help, click the "Platform Help" button.
 ''')
         info_text.config(state='disabled', bg=self._palette['text_bg'], 
                         fg=self._palette['text_fg'], insertbackground=self._palette['text_fg'])
-        info_text.config(state='disabled', bg=self._palette['text_bg'], 
-                        fg=self._palette['text_fg'], insertbackground=self._palette['text_fg'])
 
         # footer
         footer = ttk.Frame(self)
