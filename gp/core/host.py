@@ -15,8 +15,16 @@ except Exception:
 try:
     from evdev import UInput, ecodes
     UINPUT_AVAILABLE = True
-except Exception:
+except ImportError:
+    # evdev not installed - this is expected on Windows or if not yet installed on Linux
     UINPUT_AVAILABLE = False
+    UInput = None
+    ecodes = None
+except Exception:
+    # Other error loading evdev
+    UINPUT_AVAILABLE = False
+    UInput = None
+    ecodes = None
 
 
 class _UInputGamepad:

@@ -18,30 +18,6 @@ CooPad allows you to use a physical gamepad connected to one computer (Client) t
 
 ### Installation
 
-#### Linux
-
-**Option 1: Install .deb package (Recommended)**
-```bash
-# Download the latest .deb from Releases
-sudo dpkg -i coopad_*.deb
-
-# Run from applications menu or terminal
-coopad
-```
-
-**Option 2: Run from source**
-```bash
-# Install system dependencies
-sudo apt update
-sudo apt install python3-tk python3-dev python3-pip
-
-# Install Python dependencies
-pip3 install -r requirements.txt
-
-# Run the application
-python3 main.py
-```
-
 #### Windows
 
 **Option 1: Download executable (Recommended)**
@@ -61,6 +37,31 @@ pip install -r requirements.txt
 
 # Run the application
 python main.py
+```
+
+#### Linux
+
+**Option 1: Install .deb package (Recommended)**
+```bash
+# Download the latest .deb from Releases
+sudo dpkg -i coopad_*.deb
+
+# The package automatically installs dependencies
+# Run from applications menu or terminal
+coopad
+```
+
+**Option 2: Run from source**
+```bash
+# Install system dependencies
+sudo apt update
+sudo apt install python3-tk python3-dev python3-pip
+
+# Install Python dependencies
+pip3 install -r requirements.txt
+
+# Run the application
+python3 main.py
 ```
 
 ### Basic Usage
@@ -99,31 +100,35 @@ For playing over the internet, use a VPN solution:
 
 ## 🖥️ Platform-Specific Setup
 
-### Linux Host Requirements
-- **evdev**: For virtual gamepad creation
-- **uinput module**: Must be loaded and accessible
-
-The .deb package automatically:
-- Installs udev rules for uinput access
-- Adds user to 'input' group
-- Loads the uinput module
-
-**Manual setup (if needed):**
-```bash
-# Load uinput module
-sudo modprobe uinput
-
-# Setup permissions (automatically done by .deb)
-./scripts/setup_uinput.sh
-
-# Then log out and back in
-```
-
 ### Windows Host Requirements
 - **ViGEm Bus Driver**: Virtual gamepad driver
   - Download from: https://github.com/ViGEm/ViGEmBus/releases
   - Install the driver before running CooPad
   - Requires administrator privileges to install
+
+### Linux Host Requirements
+- **evdev**: For virtual gamepad creation (automatically installed by .deb package)
+- **uinput module**: Must be loaded and accessible
+
+The .deb package automatically:
+- Installs evdev library and dependencies
+- Installs udev rules for uinput access
+- Adds user to 'input' group
+- Loads the uinput module
+
+**Manual setup (if running from source):**
+```bash
+# Install evdev
+pip3 install evdev
+
+# Load uinput module
+sudo modprobe uinput
+
+# Setup permissions
+./scripts/setup_uinput.sh
+
+# Then log out and back in
+```
 
 ### Client Requirements (Both Platforms)
 - **pygame**: For reading physical gamepad input
@@ -161,16 +166,18 @@ Both Host and Client tabs show real-time telemetry:
 
 ### Build Commands
 
-**Linux .deb package:**
-```bash
-./scripts/build_deb.sh 1.0.0
-```
+### Build Commands
 
 **Windows executable:**
 ```bash
 scripts\build_windows.bat 1.0.0
 # or
 .\scripts\build_windows.ps1 1.0.0
+```
+
+**Linux .deb package:**
+```bash
+./scripts/build_deb.sh 1.0.0
 ```
 
 **Both platforms:**
@@ -183,16 +190,17 @@ Output will be in the `dist/` directory.
 ## 🐛 Troubleshooting
 
 ### Host Won't Start
-**Linux:**
-- Check if uinput module is loaded: `lsmod | grep uinput`
-- Check permissions: `ls -l /dev/uinput`
-- Run setup script: `./scripts/setup_uinput.sh`
-- Or run with sudo: `sudo -E python3 main.py`
-
 **Windows:**
 - Install ViGEm Bus Driver from official releases
 - Restart computer after driver installation
 - Run as Administrator if needed
+
+**Linux:**
+- If using .deb package: Dependencies are installed automatically
+- Check if uinput module is loaded: `lsmod | grep uinput`
+- Check permissions: `ls -l /dev/uinput`
+- Run setup script: `./scripts/setup_uinput.sh`
+- Or run with sudo: `sudo -E python3 main.py`
 
 ### Client Can't Connect
 - Verify both devices are on the same network

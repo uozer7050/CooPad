@@ -5,6 +5,7 @@ Provides user-friendly status messages about platform capabilities.
 import sys
 import platform
 import os
+import subprocess
 
 
 class PlatformInfo:
@@ -33,12 +34,29 @@ class PlatformInfo:
         except ImportError:
             pass
         
-        # Check for Linux evdev
-        try:
-            import evdev
-            self.evdev_available = True
-        except ImportError:
-            pass
+        # Check for Linux evdev - attempt auto-install if missing on Linux
+        if self.is_linux:
+            try:
+                import evdev
+                self.evdev_available = True
+            except ImportError:
+                # Try to auto-install evdev on Linux
+                try:
+                    import subprocess
+                    import sys
+                    # Silently attempt pip install
+                    subprocess.check_call(
+                        [sys.executable, '-m', 'pip', 'install', '--user', '-q', 'evdev'],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        timeout=30
+                    )
+                    # Try importing again
+                    import evdev
+                    self.evdev_available = True
+                except:
+                    # Auto-install failed, evdev remains unavailable
+                    self.evdev_available = False
         
         # Check for uinput device (Linux)
         if self.is_linux and os.path.exists('/dev/uinput'):
@@ -106,12 +124,12 @@ class PlatformInfo:
                     }
             else:
                 return {
-                    'status': 'error',
-                    'icon': '✗',
-                    'color': '#ef4444',
-                    'message': 'evdev library not installed',
-                    'details': 'Install with: pip install evdev',
-                    'action': 'Install evdev to enable virtual gamepad support on Linux'
+                    'status': 'warning',
+                    'icon': '⚠',
+                    'color': '#f59e0b',
+                    'message': 'evdev library is being installed automatically',
+                    'details': 'The application will set up required dependencies',
+                    'action': 'Host mode will be available after installation completes'
                 }
         else:
             return {

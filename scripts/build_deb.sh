@@ -25,6 +25,8 @@ pyinstaller --noconfirm --onefile \
   --name ${PKGNAME} \
   --add-data "img:img" \
   --add-data "gp:gp" \
+  --hidden-import=evdev \
+  --collect-all=evdev \
   main.py
 
 echo "Preparing package tree..."
@@ -61,7 +63,7 @@ KERNEL=="uinput", MODE="0660", GROUP="input"
 SUBSYSTEM=="uinput", MODE="0660", GROUP="input"
 UDEV
 
-# Create postinst script to set up permissions
+# Create postinst script to set up permissions and install evdev
 cat > ${PKG_DIR}/DEBIAN/postinst <<'POSTINST'
 #!/bin/bash
 set -e
@@ -82,6 +84,17 @@ if ! lsmod | grep -q uinput; then
     modprobe uinput || true
 fi
 
+# Install python3-evdev if available via apt (silent, best effort)
+if command -v apt-get >/dev/null 2>&1; then
+    apt-get update -qq >/dev/null 2>&1 || true
+    apt-get install -y -qq python3-evdev >/dev/null 2>&1 || true
+fi
+
+# Try to install evdev via pip as fallback (user install, silent)
+if command -v pip3 >/dev/null 2>&1; then
+    pip3 install --user -q evdev >/dev/null 2>&1 || true
+fi
+
 echo "CooPad installed successfully!"
 echo "To use Host mode, add your user to the 'input' group:"
 echo "  sudo usermod -aG input \$USER"
@@ -100,6 +113,7 @@ Section: utils
 Priority: optional
 Architecture: amd64
 Depends: python3
+Recommends: python3-pip, python3-evdev
 Maintainer: CooPad <no-reply@example.com>
 Description: CooPad remote gamepad (host/client)
  Cross-platform remote gamepad application that allows you to use a
@@ -112,6 +126,7 @@ Description: CooPad remote gamepad (host/client)
   - Configurable update rates (30/60/90 Hz)
   - Real-time network statistics
   - Automatic platform detection
+  - Automatic dependency installation
 EOF
 
 # Set permissions
