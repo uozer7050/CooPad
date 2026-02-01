@@ -69,15 +69,20 @@ class GpController:
     def __init__(self, status_cb: Callable[[str], None], telemetry_cb: Callable[[str], None]):
         self.status_cb = status_cb
         self.telemetry_cb = telemetry_cb
+        self.update_rate = 60  # Default update rate in Hz
         HostCls, ClientCls, error = _try_import_real()
         self._host: BaseRunner
         self._client: BaseRunner
         if HostCls is not None and ClientCls is not None:
             # Wrap real classes to conform to start/stop interface
             class RealHost(BaseRunner):
+                def __init__(inner_self, status_cb, telemetry_cb, parent):
+                    super().__init__(status_cb, telemetry_cb)
+                    inner_self.parent = parent
+                
                 def _run(inner_self):
                     try:
-                        h = HostCls()
+                        h = HostCls(status_cb=inner_self.status_cb, telemetry_cb=inner_self.telemetry_cb)
                         inner_self.status_cb("✓ Host initialized successfully")
                         h.start()
                         while not inner_self._stop_event.is_set():
@@ -93,9 +98,14 @@ class GpController:
                         inner_self.status_cb(f"✗ Host error: {e}")
 
             class RealClient(BaseRunner):
+                def __init__(inner_self, status_cb, telemetry_cb, parent):
+                    super().__init__(status_cb, telemetry_cb)
+                    inner_self.parent = parent
+                
                 def _run(inner_self):
                     try:
-                        c = ClientCls()
+                        c = ClientCls(status_cb=inner_self.status_cb, telemetry_cb=inner_self.telemetry_cb, 
+                                     update_rate=inner_self.parent.update_rate)
                         inner_self.status_cb("✓ Client initialized successfully")
                         c.start()
                         while not inner_self._stop_event.is_set():
@@ -108,8 +118,8 @@ class GpController:
                         inner_self.status_cb(f"✗ Client error: {e}")
 
             # wrap callbacks to prefix messages with source
-            self._host = RealHost(lambda t: status_cb(f"HOST|{t}"), lambda t: telemetry_cb(f"HOST|{t}"))
-            self._client = RealClient(lambda t: status_cb(f"CLIENT|{t}"), lambda t: telemetry_cb(f"CLIENT|{t}"))
+            self._host = RealHost(lambda t: status_cb(f"HOST|{t}"), lambda t: telemetry_cb(f"HOST|{t}"), self)
+            self._client = RealClient(lambda t: status_cb(f"CLIENT|{t}"), lambda t: telemetry_cb(f"CLIENT|{t}"), self)
         else:
             if error:
                 status_cb(f"⚠ {error}")
@@ -129,3 +139,7 @@ class GpController:
 
     def stop_client(self):
         self._client.stop()
+    
+    def set_update_rate(self, rate: int):
+        """Set the client update rate (30, 60, or 90 Hz)."""
+        self.update_rate = rate

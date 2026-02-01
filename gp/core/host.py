@@ -119,7 +119,7 @@ class _UInputGamepad:
 
 
 class GamepadHost:
-    def __init__(self, bind_ip: str = "", port: int = 7777, status_cb=None):
+    def __init__(self, bind_ip: str = "", port: int = 7777, status_cb=None, telemetry_cb=None):
         self.bind_ip = bind_ip
         self.port = port
         self._sock: Optional[socket.socket] = None
@@ -130,7 +130,11 @@ class GamepadHost:
         self._owner = None
         self._last_time = 0.0
         self.status_cb = status_cb or (lambda s: print(f"HOST: {s}"))
+        self.telemetry_cb = telemetry_cb or (lambda s: None)
         self._vg = None
+        self._packet_count = 0
+        self._latency_samples = []
+        self._last_telemetry_time = 0
 
     def start(self):
         if self._thread and self._thread.is_alive():
@@ -211,6 +215,10 @@ class GamepadHost:
                     continue
             self._last_seq = state.sequence
             self._last_time = time.time()
+            self._packet_count += 1
+
+            # Calculate telemetry
+            self._update_telemetry(state)
 
             # apply state to vgamepad if available
             try:
@@ -308,3 +316,49 @@ class GamepadHost:
             self._vg.update()
         except Exception as e:
             self.status_cb(f'vgamepad apply error: {e}')
+    
+    def _update_telemetry(self, state):
+        """Calculate and report telemetry metrics."""
+        current_time = time.perf_counter()
+        
+        # Calculate network latency from packet timestamp
+        packet_time_ns = state.timestamp
+        packet_time_s = packet_time_ns / 1_000_000_000.0
+        current_time_ns = time.perf_counter_ns()
+        current_time_s = current_time_ns / 1_000_000_000.0
+        
+        latency_ms = (current_time_s - packet_time_s) * 1000
+        
+        # Track samples for jitter calculation
+        self._latency_samples.append(latency_ms)
+        if len(self._latency_samples) > 50:
+            self._latency_samples.pop(0)
+        
+        # Calculate jitter (standard deviation of latency)
+        if len(self._latency_samples) >= 2:
+            import statistics
+            jitter_ms = statistics.stdev(self._latency_samples)
+        else:
+            jitter_ms = 0.0
+        
+        # Calculate receive rate
+        if not hasattr(self, '_rate_start_time'):
+            self._rate_start_time = current_time
+            self._rate_packet_count = 0
+        
+        self._rate_packet_count += 1
+        elapsed = current_time - self._rate_start_time
+        if elapsed >= 1.0:
+            rate_hz = self._rate_packet_count / elapsed
+            self._rate_start_time = current_time
+            self._rate_packet_count = 0
+        else:
+            rate_hz = 0
+        
+        # Report telemetry every second
+        if current_time - self._last_telemetry_time >= 1.0:
+            if rate_hz > 0:
+                self.telemetry_cb(f'Latency: {latency_ms:.1f}ms | Jitter: {jitter_ms:.1f}ms | Rate: {rate_hz:.1f}Hz | seq={state.sequence}')
+            else:
+                self.telemetry_cb(f'Latency: {latency_ms:.1f}ms | Jitter: {jitter_ms:.1f}ms | seq={state.sequence}')
+            self._last_telemetry_time = current_time

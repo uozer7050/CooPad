@@ -256,18 +256,22 @@ class App(tk.Tk):
 
         make_tab_button('Host')
         make_tab_button('Client')
+        make_tab_button('Settings')
 
         # content frames
         tabs_frame = ttk.Frame(right)
         tabs_frame.pack(fill='both', expand=True, padx=12, pady=(0,0))
         host_tab = ttk.Frame(tabs_frame)
         client_tab = ttk.Frame(tabs_frame)
-        self._content_frames = {'Host': host_tab, 'Client': client_tab}
+        settings_tab = ttk.Frame(tabs_frame)
+        self._content_frames = {'Host': host_tab, 'Client': client_tab, 'Settings': settings_tab}
 
         # Host content
         ttk.Label(host_tab, text='Host Status', font=(None, 12, 'bold')).pack(anchor='nw', padx=8, pady=(8,4))
         self.host_latency_var = tk.StringVar(value='Latency: — ms')
         ttk.Label(host_tab, textvariable=self.host_latency_var).pack(anchor='nw', padx=8, pady=4)
+        self.host_jitter_var = tk.StringVar(value='Jitter: — ms')
+        ttk.Label(host_tab, textvariable=self.host_jitter_var).pack(anchor='nw', padx=8, pady=4)
         self.host_packets_var = tk.StringVar(value='Packets: —')
         ttk.Label(host_tab, textvariable=self.host_packets_var).pack(anchor='nw', padx=8, pady=4)
         ttk.Label(host_tab, text='Host Log', anchor='w').pack(fill='x', padx=8, pady=(8,0))
@@ -279,12 +283,72 @@ class App(tk.Tk):
         ttk.Label(client_tab, text='Client Status', font=(None, 12, 'bold')).pack(anchor='nw', padx=8, pady=(8,4))
         self.client_latency_var = tk.StringVar(value='Latency: — ms')
         ttk.Label(client_tab, textvariable=self.client_latency_var).pack(anchor='nw', padx=8, pady=4)
+        self.client_jitter_var = tk.StringVar(value='Jitter: — ms')
+        ttk.Label(client_tab, textvariable=self.client_jitter_var).pack(anchor='nw', padx=8, pady=4)
         self.client_packets_var = tk.StringVar(value='Packets: —')
         ttk.Label(client_tab, textvariable=self.client_packets_var).pack(anchor='nw', padx=8, pady=4)
         ttk.Label(client_tab, text='Client Log', anchor='w').pack(fill='x', padx=8, pady=(8,0))
         self.client_box = tk.Text(client_tab, wrap='word', height=10, font=self._mono_font)
         self.client_box.pack(fill='both', expand=True, padx=8, pady=8)
         self.client_box.config(state='disabled')
+
+        # Settings content
+        ttk.Label(settings_tab, text='Network Settings', font=(None, 12, 'bold')).pack(anchor='nw', padx=8, pady=(8,4))
+        
+        # Update rate setting
+        rate_frame = ttk.Frame(settings_tab)
+        rate_frame.pack(fill='x', padx=8, pady=12)
+        ttk.Label(rate_frame, text='Client Update Rate:', font=(None, 10, 'bold')).pack(anchor='w', pady=(0,4))
+        ttk.Label(rate_frame, text='Higher rates provide smoother gameplay but use more bandwidth.', 
+                 font=(None, 9), foreground='#888888').pack(anchor='w', pady=(0,8))
+        
+        self.update_rate_var = tk.IntVar(value=60)
+        rate_options_frame = ttk.Frame(rate_frame)
+        rate_options_frame.pack(anchor='w', pady=4)
+        
+        ttk.Radiobutton(rate_options_frame, text='30 Hz (Low bandwidth)', 
+                       variable=self.update_rate_var, value=30,
+                       command=self._on_rate_change).pack(anchor='w', pady=2)
+        ttk.Radiobutton(rate_options_frame, text='60 Hz (Recommended)', 
+                       variable=self.update_rate_var, value=60,
+                       command=self._on_rate_change).pack(anchor='w', pady=2)
+        ttk.Radiobutton(rate_options_frame, text='90 Hz (High performance)', 
+                       variable=self.update_rate_var, value=90,
+                       command=self._on_rate_change).pack(anchor='w', pady=2)
+        
+        # Info section
+        ttk.Separator(settings_tab, orient='horizontal').pack(fill='x', padx=8, pady=12)
+        
+        info_frame = ttk.Frame(settings_tab)
+        info_frame.pack(fill='both', expand=True, padx=8, pady=8)
+        
+        ttk.Label(info_frame, text='About CooPad', font=(None, 12, 'bold')).pack(anchor='w', pady=(0,8))
+        
+        info_text = tk.Text(info_frame, wrap='word', height=12, font=(None, 9))
+        info_text.pack(fill='both', expand=True)
+        info_text.insert('1.0', '''CooPad - Remote Gamepad over Network
+
+Version: 5.1
+License: Open Source
+
+CooPad allows you to use a gamepad over a network connection. The client captures gamepad inputs and sends them to the host, which creates a virtual gamepad that games can use.
+
+Features:
+• Cross-platform support (Windows ↔ Linux)
+• Low latency gameplay
+• Configurable update rates
+• Real-time network statistics
+• Automatic platform detection
+
+Network Requirements:
+• Both devices on same LAN, or
+• Connected via VPN (ZeroTier, Tailscale, etc.)
+• UDP port 7777 must be accessible
+
+For setup help, click the "Platform Help" button.
+''')
+        info_text.config(state='disabled', bg=self._palette['text_bg'], 
+                        fg=self._palette['text_fg'], insertbackground=self._palette['text_fg'])
 
         # footer
         footer = ttk.Frame(self)
@@ -385,28 +449,36 @@ class App(tk.Tk):
         try:
             if text.startswith('HOST|'):
                 t = text.split('|', 1)[1].strip()
-                if 'Latency' in t:
-                    parts = t.split('|')
-                    self.host_latency_var.set(parts[0].strip())
-                    import re
-                    if len(parts) > 1:
-                        m = re.search(r'seq=(\d+)', parts[1])
-                        if m:
-                            self.host_packets_var.set(f'Packets: {m.group(1)}')
-                else:
-                    self.host_latency_var.set(t)
+                # Parse telemetry: "Latency: X.Xms | Jitter: X.Xms | Rate: XXHz | seq=XXX"
+                parts = [p.strip() for p in t.split('|')]
+                for part in parts:
+                    if part.startswith('Latency:'):
+                        self.host_latency_var.set(part)
+                    elif part.startswith('Jitter:'):
+                        self.host_jitter_var.set(part)
+                    elif part.startswith('Rate:'):
+                        # Extract rate and sequence
+                        rate_part = part.split('seq=')[0].strip()
+                        self.host_packets_var.set(rate_part)
+                        if 'seq=' in part:
+                            seq = part.split('seq=')[1].strip()
+                            self.host_packets_var.set(f'{rate_part} | Seq: {seq}')
             elif text.startswith('CLIENT|'):
                 t = text.split('|', 1)[1].strip()
-                if 'Latency' in t:
-                    parts = t.split('|')
-                    self.client_latency_var.set(parts[0].strip())
-                    import re
-                    if len(parts) > 1:
-                        m = re.search(r'seq=(\d+)', parts[1])
-                        if m:
-                            self.client_packets_var.set(f'Packets: {m.group(1)}')
-                else:
-                    self.client_latency_var.set(t)
+                # Parse telemetry: "Latency: X.Xms | Jitter: X.Xms | Rate: XXHz | seq=XXX"
+                parts = [p.strip() for p in t.split('|')]
+                for part in parts:
+                    if part.startswith('Latency:'):
+                        self.client_latency_var.set(part)
+                    elif part.startswith('Jitter:'):
+                        self.client_jitter_var.set(part)
+                    elif part.startswith('Rate:'):
+                        # Extract rate and sequence
+                        rate_part = part.split('seq=')[0].strip()
+                        self.client_packets_var.set(rate_part)
+                        if 'seq=' in part:
+                            seq = part.split('seq=')[1].strip()
+                            self.client_packets_var.set(f'{rate_part} | Seq: {seq}')
             else:
                 self._footer_label.config(text=text)
         except Exception:
@@ -585,9 +657,7 @@ No gamepad detected:
   → Client can still run without gamepad (sends test data)
 
 ═══════════════════════════════════════════════════════
-For more information, see:
-  • CROSS_PLATFORM_COMPATIBILITY.md (English)
-  • TEST_SONUCLARI_TR.md (Turkish)
+For more information, see README.md
 ═══════════════════════════════════════════════════════
 """
         
@@ -597,6 +667,12 @@ For more information, see:
         # Close button
         ttk.Button(help_window, text='Close', 
                   command=help_window.destroy).pack(pady=(0,20))
+    
+    def _on_rate_change(self):
+        """Handle update rate change."""
+        rate = self.update_rate_var.get()
+        self._gp.set_update_rate(rate)
+        self._append_status(f'CLIENT|Update rate changed to {rate} Hz')
 
 
 def main():
