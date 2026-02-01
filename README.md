@@ -247,6 +247,40 @@ Output will be in the `dist/` directory.
 - **Windows**: ViGEm Bus Driver (Xbox 360 emulation)
 - **Format**: Full Xbox 360 controller layout
 
+## 📁 Project Structure
+
+```
+v5.1/
+├── gp/                    # Core gamepad communication package
+│   └── core/             # Host and client implementations
+│       ├── client.py     # Client-side gamepad capture
+│       ├── host.py       # Host-side virtual gamepad
+│       └── protocol.py   # Network protocol definitions
+├── docs/                  # Documentation
+│   ├── PYINSTALLER_FIX.md
+│   └── RELEASE_NOTES.md
+├── tests/                 # Test files
+│   ├── integration_test.py
+│   ├── platform_test.py
+│   ├── test_cross_platform.py
+│   └── validate_features.py
+├── utils/                 # Utility scripts and demos
+│   ├── check_imports.py
+│   ├── demo_ux_improvements.py
+│   ├── hook-vgamepad.py
+│   ├── inspect_vgamepad.py
+│   ├── main_original.py
+│   └── ui_mockup.py
+├── scripts/               # Build and setup scripts
+├── img/                   # Application icons and images
+├── main.py               # Main application entry point
+├── gp_backend.py         # Backend controller wrapper
+├── platform_info.py      # Platform detection and info
+├── requirements.txt      # Python dependencies
+├── coopad.spec          # PyInstaller build specification
+└── README.md            # This file
+```
+
 ## 🤝 Contributing
 
 This is an open-source project. Contributions are welcome!
