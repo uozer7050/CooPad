@@ -9,6 +9,21 @@ MAX_PACKET_SIZE = 1024  # Maximum allowed packet size
 MIN_PACKET_SIZE = PACKET_SIZE  # Minimum valid packet size
 
 
+@dataclass
+class GamepadState:
+    version: int
+    client_id: int
+    sequence: int
+    buttons: int
+    lt: int
+    rt: int
+    lx: int
+    ly: int
+    rx: int
+    ry: int
+    timestamp: int
+
+
 def validate_packet_size(data: bytes) -> bool:
     """Validate packet size is within acceptable bounds."""
     size = len(data)
@@ -39,21 +54,6 @@ def validate_gamepad_state(state: GamepadState) -> bool:
         return False
     
     return True
-
-
-@dataclass
-class GamepadState:
-    version: int
-    client_id: int
-    sequence: int
-    buttons: int
-    lt: int
-    rt: int
-    lx: int
-    ly: int
-    rx: int
-    ry: int
-    timestamp: int
 
 
 def pack(state: GamepadState) -> bytes:
