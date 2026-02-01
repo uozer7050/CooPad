@@ -70,6 +70,7 @@ class GpController:
         self.status_cb = status_cb
         self.telemetry_cb = telemetry_cb
         self.update_rate = 60  # Default update rate in Hz
+        self.controller_profile = 'generic'  # Default controller profile
         HostCls, ClientCls, error = _try_import_real()
         self._host: BaseRunner
         self._client: BaseRunner
@@ -105,7 +106,8 @@ class GpController:
                 def _run(inner_self):
                     try:
                         c = ClientCls(status_cb=inner_self.status_cb, telemetry_cb=inner_self.telemetry_cb, 
-                                     update_rate=inner_self.parent.update_rate)
+                                     update_rate=inner_self.parent.update_rate,
+                                     controller_profile=inner_self.parent.controller_profile)
                         inner_self.status_cb("✓ Client initialized successfully")
                         c.start()
                         while not inner_self._stop_event.is_set():
@@ -143,3 +145,7 @@ class GpController:
     def set_update_rate(self, rate: int):
         """Set the client update rate (30, 60, or 90 Hz)."""
         self.update_rate = rate
+    
+    def set_controller_profile(self, profile: str):
+        """Set the controller profile ('generic', 'ps4', 'ps5', 'xbox360')."""
+        self.controller_profile = profile
