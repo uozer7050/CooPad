@@ -8,8 +8,9 @@
 <img width="1093" height="725" alt="image" src="https://github.com/user-attachments/assets/aada6173-6870-421e-941d-cd35b2af34f9" />
 
 **Cross-platform remote gamepad application for gaming over network**
+
 CooPad allows you to use a physical gamepad connected to one computer (Client) to control games on another computer (Host) over a local network or VPN. Perfect for couch gaming, game streaming, or playing with friends remotely.
-*100% open-source project. Contributions, reviews, and improvements are welcome, and some features or edge cases may still be missing.*
+🖥️**100% open-source project. Contributions, reviews, and improvements are welcome, and some features or edge cases may still be missing.**
 
 ## 🎮 Features
 
