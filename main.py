@@ -31,14 +31,23 @@ class App(tk.Tk):
         self.title("CooPad — Remote Gamepad")
         self.geometry("980x620")
 
-        # icon
+        # icon - handle cross-platform icon loading
         base = os.path.dirname(__file__)
-        ico_path = os.path.join(base, "img", "src_CooPad.ico")
-        if os.path.exists(ico_path):
-            try:
-                self.wm_iconbitmap(ico_path)
-            except Exception:
-                pass
+        try:
+            if sys.platform == 'win32':
+                # Windows can use .ico files directly
+                ico_path = os.path.join(base, "img", "src_CooPad.ico")
+                if os.path.exists(ico_path):
+                    self.wm_iconbitmap(ico_path)
+            else:
+                # Linux/Unix - use PNG with iconphoto
+                png_path = os.path.join(base, "img", "src_CooPad.png")
+                if os.path.exists(png_path):
+                    icon_img = Image.open(png_path)
+                    icon_photo = ImageTk.PhotoImage(icon_img)
+                    self.iconphoto(True, icon_photo)
+        except Exception:
+            pass
 
         # style
         self.style = ttk.Style(self)
