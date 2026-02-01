@@ -316,6 +316,38 @@ class App(tk.Tk):
                        variable=self.update_rate_var, value=90,
                        command=self._on_rate_change).pack(anchor='w', pady=2)
         
+        # Controller profile setting
+        ttk.Separator(settings_tab, orient='horizontal').pack(fill='x', padx=8, pady=12)
+        
+        controller_frame = ttk.Frame(settings_tab)
+        controller_frame.pack(fill='x', padx=8, pady=12)
+        ttk.Label(controller_frame, text='Controller Profile:', font=(None, 10, 'bold')).pack(anchor='w', pady=(0,4))
+        ttk.Label(controller_frame, text='Select your controller type for proper button and axis mapping.', 
+                 font=(None, 9), foreground='#888888').pack(anchor='w', pady=(0,8))
+        
+        # Import controller profiles to get available options
+        try:
+            from gp.core.controller_profiles import get_profile_names
+            profile_names = get_profile_names()
+        except Exception:
+            profile_names = ['Generic', 'PS4 Controller', 'PS5 Controller', 'Xbox 360 Controller']
+        
+        self.controller_profile_var = tk.StringVar(value='Generic')
+        controller_dropdown_frame = ttk.Frame(controller_frame)
+        controller_dropdown_frame.pack(anchor='w', pady=4)
+        
+        ttk.Label(controller_dropdown_frame, text='Profile:').pack(side='left', padx=(0,8))
+        controller_dropdown = ttk.Combobox(controller_dropdown_frame, 
+                                          textvariable=self.controller_profile_var,
+                                          values=profile_names,
+                                          state='readonly',
+                                          width=30)
+        controller_dropdown.pack(side='left')
+        controller_dropdown.bind('<<ComboboxSelected>>', self._on_controller_change)
+        
+        ttk.Label(controller_frame, text='Note: Change takes effect when client restarts.', 
+                 font=(None, 8), foreground='#888888').pack(anchor='w', pady=(8,0))
+        
         # Info section
         ttk.Separator(settings_tab, orient='horizontal').pack(fill='x', padx=8, pady=12)
         
@@ -337,6 +369,7 @@ Features:
 • Cross-platform support (Windows ↔ Linux)
 • Low latency gameplay
 • Configurable update rates
+• Controller profile selection (PS4, PS5, Xbox 360)
 • Real-time network statistics
 • Automatic platform detection
 
@@ -347,6 +380,8 @@ Network Requirements:
 
 For setup help, click the "Platform Help" button.
 ''')
+        info_text.config(state='disabled', bg=self._palette['text_bg'], 
+                        fg=self._palette['text_fg'], insertbackground=self._palette['text_fg'])
         info_text.config(state='disabled', bg=self._palette['text_bg'], 
                         fg=self._palette['text_fg'], insertbackground=self._palette['text_fg'])
 
@@ -673,6 +708,18 @@ For more information, see README.md
         rate = self.update_rate_var.get()
         self._gp.set_update_rate(rate)
         self._append_status(f'CLIENT|Update rate changed to {rate} Hz')
+    
+    def _on_controller_change(self, event=None):
+        """Handle controller profile change."""
+        display_name = self.controller_profile_var.get()
+        # Convert display name to profile key
+        try:
+            from gp.core.controller_profiles import get_profile_by_display_name
+            profile_key = get_profile_by_display_name(display_name)
+            self._gp.set_controller_profile(profile_key)
+            self._append_status(f'CLIENT|Controller profile changed to {display_name}')
+        except Exception as e:
+            self._append_status(f'CLIENT|Error changing controller profile: {e}')
 
 
 def main():
