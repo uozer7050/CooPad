@@ -2,7 +2,8 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-<img width="2560" height="1664" alt="upscalemedia-transformed" src="https://github.com/user-attachments/assets/fdd04872-3608-4209-80a8-5208af50ac37" />
+<img width="2528" height="1696" alt="upscalemedia-transformed" src="https://github.com/user-attachments/assets/1719651f-1ab5-4892-a9d5-cce688c6a36f" />
+
 
 
 
