@@ -83,8 +83,10 @@ python main.py
      - 60 Hz: Recommended for most users
      - 90 Hz: High performance for low-latency networks
 
+
    
-   <img width="400" height="407" alt="image" src="https://github.com/user-attachments/assets/01f86827-a8f5-4fe8-887a-ad81e4b2da94" />
+   ![CooPad Settings](img/543518523-01f86827-a8f5-4fe8-887a-ad81e4b2da94.png)
+
 
 ## 📡 Network Setup
 
