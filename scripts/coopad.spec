@@ -104,6 +104,9 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# Icon path for the executable (Windows .ico file)
+icon_path = os.path.join(project_root, 'img/src_CooPad.ico')
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -125,5 +128,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     # Icon path using absolute path from project root
-    icon=os.path.join(project_root, 'img/src_CooPad.ico') if os.path.exists(os.path.join(project_root, 'img/src_CooPad.ico')) else None,
+    icon=icon_path if os.path.exists(icon_path) else None,
 )
