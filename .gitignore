@@ -64,6 +64,13 @@ package/
 # Exception: Keep .deb files in scripts/releases for distribution
 !scripts/releases/*.deb
 
+# AppImage build artifacts
+AppDir/
+*.AppImage
+# Exception: Keep AppImage files in scripts/releases for distribution
+!scripts/releases/*.AppImage
+appimagetool-*.AppImage
+
 # Misc
 .python-version
 .env

@@ -54,9 +54,19 @@ pip install -r requirements.txt
 python main.py
 ```
 
-#### Ubuntu/Debian based Linux distros (Mint, Pop!_OS, Zorin, KDE Neon)
+#### Linux (All Distributions)
 
-**Option 1: Install .deb package (Recommended)**
+**Option 1: AppImage (Recommended for all Linux distros)**
+```bash
+# Download the latest AppImage from Releases
+chmod +x CooPad-*.AppImage
+./CooPad-*.AppImage
+
+# Optional: Move to system path for easy access
+sudo mv CooPad-*.AppImage /usr/local/bin/coopad
+```
+
+**Option 2: .deb package (For Ubuntu/Debian/Mint/Pop!_OS/Zorin/KDE Neon)**
 ```bash
 # Download the latest .deb from Releases
 sudo dpkg -i coopad_*.deb
@@ -66,7 +76,7 @@ sudo dpkg -i coopad_*.deb
 coopad
 ```
 
-**Option 2: Run from source**
+**Option 3: Run from source**
 ```bash
 # Install system dependencies
 sudo apt update
@@ -133,14 +143,27 @@ For playing over the internet, use a VPN solution:
   - Requires administrator privileges to install
 
 ### Linux Host Requirements
-- **evdev**: For virtual gamepad creation (automatically installed by .deb package)
+- **evdev**: For virtual gamepad creation
 - **uinput module**: Must be loaded and accessible
 
+**For .deb package users:**
 The .deb package automatically:
 - Installs evdev library and dependencies
 - Installs udev rules for uinput access
 - Adds user to 'input' group
 - Loads the uinput module
+
+**For AppImage users:**
+You may need to manually set up permissions:
+```bash
+# Load uinput module
+sudo modprobe uinput
+
+# Add your user to the input group
+sudo usermod -aG input $USER
+
+# Log out and back in for changes to take effect
+```
 
 **Manual setup (if running from source):**
 ```bash
@@ -245,12 +268,17 @@ scripts\build_windows.bat 1.0.0
 .\scripts\build_windows.ps1 1.0.0
 ```
 
+**Linux AppImage:**
+```bash
+./scripts/build_appimage.sh 1.0.0
+```
+
 **Linux .deb package:**
 ```bash
 ./scripts/build_deb.sh 1.0.0
 ```
 
-**Both platforms:**
+**Build all formats (Linux: AppImage + .deb, Windows: .exe):**
 ```bash
 ./scripts/build_all.sh 1.0.0
 ```
@@ -267,8 +295,11 @@ Output will be in the `dist/` directory.
 
 **Linux:**
 - If using .deb package: Dependencies are installed automatically
+- If using AppImage: Ensure uinput module is loaded and user is in input group
 - Check if uinput module is loaded: `lsmod | grep uinput`
+- Load uinput if needed: `sudo modprobe uinput`
 - Check permissions: `ls -l /dev/uinput`
+- Add user to input group: `sudo usermod -aG input $USER`
 - Run setup script: `./scripts/setup_uinput.sh`
 - Or run with sudo: `sudo -E python3 main.py`
 
