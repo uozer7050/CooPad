@@ -34,11 +34,15 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     PLATFORM="Linux"
     echo "✓ Detected: ${PLATFORM}"
     echo ""
-    echo "Building for Linux..."
+    echo "Building for Linux (AppImage + .deb)..."
     echo "───────────────────────────────────────────────────────"
+    echo "Building AppImage..."
+    ./scripts/build_appimage.sh ${VERSION}
+    echo ""
+    echo "Building .deb package..."
     ./scripts/build_deb.sh ${VERSION}
     echo "───────────────────────────────────────────────────────"
-    echo "✓ Linux .deb package created"
+    echo "✓ Linux packages created (AppImage + .deb)"
 elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
     PLATFORM="Windows"
     echo "✓ Detected: ${PLATFORM}"
@@ -61,8 +65,9 @@ else
     echo "Supported platforms: Linux (linux-gnu), Windows (msys/win32/cygwin)"
     echo ""
     echo "Please run platform-specific build script manually:"
-    echo "  Linux:   ./scripts/build_deb.sh ${VERSION}"
-    echo "  Windows: scripts\\build_windows.bat ${VERSION}"
+    echo "  Linux AppImage: ./scripts/build_appimage.sh ${VERSION}"
+    echo "  Linux .deb:     ./scripts/build_deb.sh ${VERSION}"
+    echo "  Windows:        scripts\\build_windows.bat ${VERSION}"
     exit 1
 fi
 
