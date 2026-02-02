@@ -17,15 +17,44 @@ if not exist "main.py" (
     exit /b 1
 )
 
+REM Check if spec file exists
+if not exist "scripts\coopad.spec" (
+    echo ERROR: Spec file "scripts\coopad.spec" not found!
+    echo Please ensure the spec file exists in the scripts directory.
+    pause
+    exit /b 1
+)
+
 REM Install dependencies
 REM Note: Using pygame-ce (Community Edition) which supports Python 3.12+
 echo Installing dependencies...
 pip install pyinstaller pillow pygame-ce vgamepad
+if errorlevel 1 (
+    echo ERROR: Failed to install dependencies!
+    pause
+    exit /b 1
+)
 
 REM Build executable using spec file
 echo Running PyInstaller with spec file...
 echo Note: The spec file handles proper bundling of vgamepad DLL files
-pyinstaller --noconfirm coopad.spec
+pyinstaller --noconfirm scripts\coopad.spec
+if errorlevel 1 (
+    echo.
+    echo ERROR: Build failed! PyInstaller encountered an error.
+    echo Please check the output above for details.
+    pause
+    exit /b 1
+)
+
+REM Verify that the executable was actually created
+if not exist "dist\coopad.exe" (
+    echo.
+    echo ERROR: Build completed but executable not found at dist\coopad.exe
+    echo Please check the build output for errors.
+    pause
+    exit /b 1
+)
 
 echo.
 echo Build complete!
