@@ -170,7 +170,7 @@ class GpController:
         self.client_target_ip = ip
         self.client_port = port
     
-    def set_host_config(self, bind_ip: str = '', port: int = 7777):
+    def set_host_config(self, bind_ip: str, port: int):
         """Set the host bind IP address and port."""
         self.host_bind_ip = bind_ip
         self.host_port = port
