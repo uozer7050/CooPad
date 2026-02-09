@@ -62,11 +62,24 @@ class GamepadHost:
         self._sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._sock.bind((self.bind_ip, self.port))
         if VGAME_AVAILABLE:
-            try:
-                self._vg = vg.VX360Gamepad()
-                self.status_cb('vgamepad initialized')
-            except Exception as e:
-                self.status_cb(f'vgamepad init error: {e}')
+            # Retry vgamepad init up to 3 times – ViGEmBus sometimes needs a
+            # moment after system boot or sleep before it accepts connections.
+            max_retries = 3
+            for attempt in range(1, max_retries + 1):
+                try:
+                    self._vg = vg.VX360Gamepad()
+                    self.status_cb('vgamepad initialized')
+                    break
+                except Exception as e:
+                    self.status_cb(f'vgamepad init attempt {attempt}/{max_retries} failed: {e}')
+                    if attempt < max_retries:
+                        self.status_cb(f'Retrying in 2 seconds...')
+                        # Wait, but honour stop event so we don't block shutdown
+                        if self._stop.wait(timeout=2.0):
+                            return  # stop was requested during wait
+                    else:
+                        self.status_cb('⚠ Could not connect to ViGEmBus after all retries.')
+                        self.status_cb('→ Try restarting CooPad or reinstalling ViGEmBus driver.')
 
         while not self._stop.is_set():
             try:

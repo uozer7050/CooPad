@@ -2,9 +2,10 @@ import os
 import sys
 import threading
 import time
+import json
 try:
     import tkinter as tk
-    from tkinter import ttk
+    from tkinter import ttk, messagebox
 except ImportError:
     print("Error: tkinter is not installed. Please install it for your platform.")
     sys.exit(1)
@@ -16,6 +17,29 @@ from platform_info import get_platform_info
 import socket
 from queue import Queue
 import logging
+
+# --- Config file helpers ---
+CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.coopad')
+CONFIG_PATH = os.path.join(CONFIG_DIR, 'settings.json')
+
+def load_config() -> dict:
+    """Load saved settings from disk. Returns empty dict on first run."""
+    try:
+        if os.path.exists(CONFIG_PATH):
+            with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+def save_config(cfg: dict):
+    """Persist settings to disk."""
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(cfg, f, indent=2)
+    except Exception:
+        pass
 
 
 # Global queue for input states
@@ -76,6 +100,16 @@ class App(tk.Tk):
 
         # controller (backend)
         self._gp = GpController(status_cb=self._append_status, telemetry_cb=self._set_telemetry)
+
+        # Load saved config (or empty dict on first run)
+        self._config = load_config()
+        self._settings_confirmed = self._config.get('settings_confirmed', False)
+
+        # Restore saved settings into backend
+        saved_rate = self._config.get('update_rate', 60)
+        saved_profile = self._config.get('controller_profile', 'generic')
+        self._gp.set_update_rate(saved_rate)
+        self._gp.set_controller_profile(saved_profile)
 
         # build UI
         self._build_ui()
@@ -301,7 +335,7 @@ class App(tk.Tk):
         ttk.Label(rate_frame, text='Higher rates provide smoother gameplay but use more bandwidth.', 
                  font=(None, 9), foreground='#888888').pack(anchor='w', pady=(0,8))
         
-        self.update_rate_var = tk.IntVar(value=60)
+        self.update_rate_var = tk.IntVar(value=self._config.get('update_rate', 60))
         rate_options_frame = ttk.Frame(rate_frame)
         rate_options_frame.pack(anchor='w', pady=4)
         
@@ -331,7 +365,7 @@ class App(tk.Tk):
         except Exception:
             profile_names = ['Generic', 'PS4 Controller', 'PS5 Controller', 'Xbox 360 Controller']
         
-        self.controller_profile_var = tk.StringVar(value='Generic')
+        self.controller_profile_var = tk.StringVar(value=self._config.get('controller_profile_display', 'Generic'))
         controller_dropdown_frame = ttk.Frame(controller_frame)
         controller_dropdown_frame.pack(anchor='w', pady=4)
         
@@ -346,7 +380,41 @@ class App(tk.Tk):
         
         ttk.Label(controller_frame, text='Note: Change takes effect when client restarts.', 
                  font=(None, 8), foreground='#888888').pack(anchor='w', pady=(8,0))
-        
+
+        # --- Confirm & Save button ---
+        ttk.Separator(settings_tab, orient='horizontal').pack(fill='x', padx=8, pady=12)
+
+        confirm_frame = ttk.Frame(settings_tab)
+        confirm_frame.pack(fill='x', padx=8, pady=(0, 8))
+
+        self._settings_status_var = tk.StringVar(
+            value='✓ Settings saved – ready to play!' if self._settings_confirmed
+                  else '⚠ Please review and confirm your settings before starting.'
+        )
+        self._settings_status_label = tk.Label(
+            confirm_frame,
+            textvariable=self._settings_status_var,
+            font=(None, 10, 'bold'),
+            fg='#22c55e' if self._settings_confirmed else '#f59e0b',
+            bg=self._palette['frame'],
+            anchor='w'
+        )
+        self._settings_status_label.pack(anchor='w', pady=(0,8))
+
+        self._confirm_btn = tk.Button(
+            confirm_frame,
+            text='  ✓  Confirm Settings & Save  ',
+            font=(None, 11, 'bold'),
+            bg='#22883a',
+            fg='#ffffff',
+            activebackground='#1a6b2e',
+            activeforeground='#ffffff',
+            relief='flat',
+            cursor='hand2',
+            command=self._confirm_settings
+        )
+        self._confirm_btn.pack(anchor='w', pady=(0, 4))
+
         # Info section
         ttk.Separator(settings_tab, orient='horizontal').pack(fill='x', padx=8, pady=12)
         
@@ -388,7 +456,9 @@ For setup help, click the "Platform Help" button.
         self._footer_label = ttk.Label(footer, text='Ready', anchor='w')
         self._footer_label.pack(side='left', padx=8, pady=6)
 
-        # show initial tab
+        # show initial tab – go to Settings on first run
+        if not self._settings_confirmed:
+            self._tab_active = 'Settings'
         self._apply_tab_styles()
         self._show_tab(self._tab_active)
 
@@ -518,6 +588,11 @@ For setup help, click the "Platform Help" button.
 
     def _toggle_host(self):
         if getattr(self, '_host_running', False) is not True:
+            # --- Guard: settings must be confirmed first ---
+            if not self._settings_confirmed:
+                self._prompt_settings_first()
+                return
+
             # Check if host is ready
             host_status = platform_info.get_host_status()
             if host_status['status'] == 'error':
@@ -550,6 +625,11 @@ For setup help, click the "Platform Help" button.
 
     def _toggle_client(self):
         if getattr(self, '_client_running', False) is not True:
+            # --- Guard: settings must be confirmed first ---
+            if not self._settings_confirmed:
+                self._prompt_settings_first()
+                return
+
             # Check if client is ready
             client_status = platform_info.get_client_status()
             if client_status['status'] == 'warning':
@@ -707,6 +787,51 @@ For more information, see README.md
         ttk.Button(help_window, text='Close', 
                   command=help_window.destroy).pack(pady=(0,20))
     
+    # ---------- Settings helpers ----------
+
+    def _confirm_settings(self):
+        """User explicitly confirms their settings – persist and unlock Host/Client."""
+        rate = self.update_rate_var.get()
+        display_name = self.controller_profile_var.get()
+
+        # Apply to backend
+        self._gp.set_update_rate(rate)
+        try:
+            from gp.core.controller_profiles import get_profile_by_display_name
+            profile_key = get_profile_by_display_name(display_name)
+        except Exception:
+            profile_key = 'generic'
+        self._gp.set_controller_profile(profile_key)
+
+        # Persist
+        self._settings_confirmed = True
+        self._config['settings_confirmed'] = True
+        self._config['update_rate'] = rate
+        self._config['controller_profile'] = profile_key
+        self._config['controller_profile_display'] = display_name
+        save_config(self._config)
+
+        # Update UI feedback
+        self._settings_status_var.set('✓ Settings saved – ready to play!')
+        self._settings_status_label.config(fg='#22c55e')
+        self._confirm_btn.config(text='  ✓  Settings Saved  ', bg='#1a6b2e')
+
+        self._append_status(f'Settings confirmed → {rate} Hz / {display_name}')
+
+    def _prompt_settings_first(self):
+        """Show a dialog telling the user to configure settings first."""
+        answer = messagebox.askyesno(
+            'Settings Required',
+            'You haven\'t confirmed your settings yet.\n\n'
+            'For the best experience, please go to the Settings tab first '
+            'and select your controller profile and update rate, then click '
+            '"Confirm Settings & Save".\n\n'
+            'Open the Settings tab now?',
+            icon='warning'
+        )
+        if answer:
+            self._show_tab('Settings')
+
     def _on_rate_change(self):
         """Handle update rate change."""
         rate = self.update_rate_var.get()
