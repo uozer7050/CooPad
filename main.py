@@ -57,7 +57,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("CooPad — Remote Gamepad")
-        self.geometry("1100x700")
+        self.geometry("1100x750")
 
         # icon - handle cross-platform icon loading
         base = os.path.dirname(__file__)
